@@ -148,7 +148,8 @@ const LAYERS = [
   {id:'hv_ug_line',name:'HV UG Line',type:'line',color:'#ff8c42',dash:[4,2],minzoom:8,width:[8,1.5,12,2.5,15,4,18,7]},
   {id:'lv_oh_line',name:'LV OH Line',type:'line',color:'#4CAF50',dash:null,minzoom:12,width:[12,1,14,2,16,3,18,5]},
   {id:'lv_ug_line',name:'LV UG Line',type:'line',color:'#8BC34A',dash:[4,2],minzoom:12,width:[12,1,14,2,16,3,18,5]},
-  {id:'pole_structure',name:'Pole',type:'point',color:'#42a5f5',minzoom:13},
+  {id:'pole_ht',name:'Pole HT (11m+)',type:'point',color:'#ef5350',minzoom:13,sourceLayer:'pole_structure',filter:['>=',['to-number',['get','HEIGHT'],0],11]},
+  {id:'pole_lt',name:'Pole LT (9m)',type:'point',color:'#42a5f5',minzoom:13,sourceLayer:'pole_structure',filter:['<',['to-number',['get','HEIGHT'],99],11]},
   {id:'transformer',name:'Transformer',type:'point',color:'#ff8c42',minzoom:10,radius:[10,4,13,6,15,10,18,14]},
   {id:'switch_hv',name:'Switch HV (ABS)',type:'point',color:'#ffd84d',minzoom:11,radius:[11,3,13,5,15,9,18,13]},
   {id:'switch',name:'Switch LV',type:'point',color:'#ce93d8',minzoom:13},
@@ -234,8 +235,8 @@ function initLayers() {
   for (const c of LAYERS) {
     if (c.type === 'point') {
       const r = c.radius || [12,3,14,5,16,8,18,12];
-      map.addLayer({
-        id: c.id, type: 'circle', source: 'mzec', 'source-layer': c.id, minzoom: c.minzoom,
+      const layerDef = {
+        id: c.id, type: 'circle', source: 'mzec', 'source-layer': c.sourceLayer || c.id, minzoom: c.minzoom,
         paint: {
           'circle-color': c.color,
           'circle-radius': ['interpolate',['linear'],['zoom'],...r],
@@ -243,7 +244,9 @@ function initLayers() {
           'circle-stroke-color': curBase === 'dark' ? '#0a0e14' : '#fff',
           'circle-opacity': 0.92
         }
-      });
+      };
+      if (c.filter) layerDef.filter = c.filter;
+      map.addLayer(layerDef);
     } else if (c.type === 'line') {
       const w = c.width || [8,1,12,2,15,3.5,18,6];
       var linePaint = {
