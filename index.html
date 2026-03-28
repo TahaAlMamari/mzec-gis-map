@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MZEC Network GIS</title>
+<meta name="theme-color" content="#0a0e14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
 <style>
@@ -94,6 +98,16 @@ body{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#0a0e1
 .pr.hi .pk{color:#00d4ff80}
 .pcrd{padding:6px 14px 10px;font-size:10px;color:#445;border-top:1px solid #1a2030;font-family:monospace;cursor:pointer}
 .pcrd:active{color:#00d4ff}
+
+/* PWA install banner */
+#installBanner{display:none;position:fixed;bottom:80px;left:16px;right:16px;z-index:800;background:#0d1117;border:1px solid #00d4ff40;
+  border-radius:12px;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,212,255,.15)}
+#installBanner.show{display:flex}
+#installBanner .ib-icon{width:40px;height:40px;border-radius:10px;background:#00d4ff15;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+#installBanner .ib-text{flex:1;color:#ccd;font-size:13px}
+#installBanner .ib-text b{color:#00d4ff;display:block;font-size:14px}
+#installBanner .ib-btn{padding:8px 16px;border:none;border-radius:8px;background:#00d4ff;color:#0a0e14;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+#installBanner .ib-close{background:none;border:none;color:#556;font-size:18px;cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
@@ -135,6 +149,13 @@ body{font-family:-apple-system,system-ui,'Segoe UI',sans-serif;background:#0a0e1
 <button class="fab" id="btnGps" onclick="locateMe()">◎</button>
 <button class="fab" id="btnSearch" onclick="toggleSearch()">⌕</button>
 <button class="fab" id="btnSat" onclick="cycleSat()">🌐</button>
+
+<div id="installBanner">
+  <div class="ib-icon">📱</div>
+  <div class="ib-text"><b>Install MZEC GIS</b>Use as an app with offline support</div>
+  <button class="ib-btn" onclick="installApp()">Install</button>
+  <button class="ib-close" onclick="dismissInstall()">✕</button>
+</div>
 
 <div id="map"></div>
 
@@ -579,6 +600,38 @@ style.textContent = '@keyframes pulse{0%,100%{box-shadow:0 0 8px #00d4ff80}50%{b
   '.gps-dot{width:16px;height:16px;border-radius:50%;background:#00d4ff;border:3px solid white;box-shadow:0 0 8px #00d4ff80;position:relative;z-index:2}' +
   '.gps-ring{width:16px;height:16px;border-radius:50%;border:2px solid #00d4ff;position:absolute;top:0;left:0;animation:gps-pulse 2s ease-out infinite;z-index:1}';
 document.head.appendChild(style);
+
+// ========== PWA: Service Worker + Install ==========
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(r => console.log('SW registered')).catch(e => console.warn('SW failed:', e));
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('pwa-dismissed')) {
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r => {
+      document.getElementById('installBanner').classList.remove('show');
+      deferredPrompt = null;
+    });
+  }
+}
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('pwa-dismissed', '1');
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
 </script>
 </body>
 </html>
